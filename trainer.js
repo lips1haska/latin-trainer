@@ -139,6 +139,11 @@ function next(focus = true) {
     input.placeholder = type === "write" ? "Например, bifurcatio, ōnis f" : "Напиши перевод";
     input.autocomplete = "off";
     input.spellcheck = false;
+    if (type === "write") {
+      input.setAttribute("autocorrect", "off");
+      input.setAttribute("autocapitalize", "none");
+      input.lang = "la";
+    }
     input.required = true;
     form.append(input);
     const check = button("Проверить", () => {}, form, "primary");
