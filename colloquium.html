@@ -156,6 +156,9 @@ function render(selected) {
   selected.forEach((task, index) => {
     if (lastDirection !== task.latinSource) {
       element("h2", task.latinSource ? "I. С латыни на русский" : "II. С русского на латынь", tasks);
+      if (!task.latinSource) {
+        element("p", "Разбирай слова в любом порядке: одна строка на одно латинское слово. В поле «Перевод термина» запиши весь термин в правильной форме.", tasks);
+      }
       lastDirection = task.latinSource;
     }
     const card = element("section", "", tasks, "task");
@@ -164,7 +167,7 @@ function render(selected) {
     const tokens = task.la.split(" ");
     task.lemmas.forEach((lemma, wordIndex) => {
       const row = element("div", "", card, "row");
-      element("span", task.latinSource ? tokens[wordIndex] : "Слово " + (wordIndex + 1) + " в латинском термине", row, "row-title");
+      element("span", task.latinSource ? tokens[wordIndex] : "Строка разбора " + (wordIndex + 1), row, "row-title");
       const forms = rowForms(lemma, task);
       field(row, "Часть речи", forms.map(x => x.part), task, {select:true});
       field(row, "Словарная форма", forms.flatMap(x => [x.form,x.full]), task, {latin:true,className:"dictionary"});
@@ -181,11 +184,52 @@ function startExam() {
   render(ticket.value === "mix" ? randomExam() : variants.get(ticket.value));
 }
 
+function answersForUnorderedRows() {
+  const matched = new Map();
+  for (const task of current) {
+    if (task.latinSource) continue;
+    const groups = new Map();
+    for (const field of checks) {
+      if (field.task !== task || field.translation) continue;
+      const row = field.wrapper.parentElement;
+      if (!groups.has(row)) groups.set(row, []);
+      groups.get(row).push(field);
+    }
+    const rows = [...groups.values()];
+    // Prefer the dictionary form, then the stem, when assigning partially correct rows.
+    const weights = [1, 100, 1, 11];
+    const scores = rows.map(row => rows.map(expected => row.reduce((total, field, index) =>
+      total + (expected[index].answers.some(answer => field.normalize(answer) ===
+        field.normalize(field.input.value)) ? weights[index] : 0), 0)));
+    let bestScore = -1, bestOrder;
+    function assign(order, score) {
+      if (order.length === rows.length) {
+        if (score > bestScore) {
+          bestScore = score;
+          bestOrder = order;
+        }
+        return;
+      }
+      for (let i = 0; i < rows.length; i++) {
+        if (!order.includes(i)) assign([...order, i], score + scores[order.length][i]);
+      }
+    }
+    assign([], 0);
+    rows.forEach((row, index) => row.forEach((field, column) => {
+      matched.set(field, rows[bestOrder[index]][column].answers);
+    }));
+  }
+  return matched;
+}
+
 function grade(event) {
   event.preventDefault();
   const wrong = new Set();
   let correct = 0;
-  for (const {task,wrapper,input,answers,normalize,translation} of checks) {
+  const unorderedAnswers = answersForUnorderedRows();
+  for (const field of checks) {
+    const {task,wrapper,input,normalize,translation} = field;
+    const answers = unorderedAnswers.get(field) || field.answers;
     const value = normalize(input.value);
     const ok = answers.some(answer => value === normalize(answer));
     input.disabled = true;
