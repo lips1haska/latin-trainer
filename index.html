@@ -17,11 +17,18 @@ article{padding:clamp(16px,4vw,34px);min-height:300px;box-shadow:0 15px 44px #00
 .analysis-term{color:var(--ink);font-weight:700;margin:12px 0 6px}
 .analysis dl{display:grid;grid-template-columns:minmax(115px,1fr) 2fr;gap:6px 14px;margin:0}
 .analysis dt{color:var(--muted)}.analysis dd{margin:0;overflow-wrap:anywhere}
+.dictionary-picker{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:8px}
+.colloquium-button{text-align:left;line-height:1.2}
+.colloquium-button small{display:block;margin-top:4px;color:var(--muted);font-size:.72rem}
+.colloquium-button[aria-pressed="true"]{border-color:var(--mint);color:var(--mint)}
 </style>
 <main>
 <header><div class="eyebrow">Медицинская латынь</div><h1>Тренажёр слов</h1><p>Запоминай перевод, словарную форму и род существительных.</p></header>
 <div class="filters">
-<label>Словарь<select id="deck"></select></label>
+<div class="dictionary-picker">
+  <label>Словарь<select id="deck"></select></label>
+  <button type="button" id="colloquium" class="colloquium-button" aria-pressed="false">Коллоквиум 1<small>ЛМ I–IX</small></button>
+</div>
 <label>Режим<select id="mode"><option value="learn">Заучивание · смешанный режим</option><option value="choice">Выбор из четырёх</option><option value="write">Ввод латинской формы</option><option value="translate">Перевод на русский</option><option value="flash">Карточки</option><option value="review">Повторить ошибки</option></select></label>
 </div>
 <div class="stats"><div class="stat"><strong id="total">0</strong>В словаре</div><div class="stat"><strong id="mastered">0</strong>Выучено</div><div class="stat"><strong id="mistakes">0</strong>На повторение</div></div>
@@ -37,4 +44,17 @@ article{padding:clamp(16px,4vw,34px);min-height:300px;box-shadow:0 15px 44px #00
 <footer id="storage">Прогресс сохраняется в этом браузере. Долготу гласных при вводе можно опускать.</footer>
 </main>
 <script src="words.js"></script><script src="morphology.js"></script><script src="trainer.js"></script>
+<script>
+const colloquium = document.getElementById("colloquium");
+function syncColloquium() {
+  colloquium.setAttribute("aria-pressed", String(deck.value === "all"));
+}
+colloquium.addEventListener("click", () => {
+  if (deck.value === "all") return;
+  deck.value = "all";
+  deck.dispatchEvent(new Event("change"));
+});
+deck.addEventListener("change", syncColloquium);
+syncColloquium();
+</script>
 </html>
