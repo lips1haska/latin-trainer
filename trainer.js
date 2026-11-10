@@ -143,6 +143,7 @@ function next(focus = true) {
       input.setAttribute("autocorrect", "off");
       input.setAttribute("autocapitalize", "none");
       input.lang = "la";
+      input.inputMode = "email";
     }
     input.required = true;
     form.append(input);
