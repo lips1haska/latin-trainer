@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Коллоквиум 1 · Медицинская латынь</title>
+<style>
+:root{color-scheme:dark;--bg:#10141a;--panel:#1a222c;--edge:#3b4d5c;--ink:#f2f6fa;--muted:#b8c7d3;--mint:#9de8ca;--red:#ffb0a4}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 60% 0,#20313a,transparent 650px),var(--bg);color:var(--ink);font:16px/1.5 system-ui,sans-serif}main{max-width:940px;margin:auto;padding:24px 16px 64px}a{color:var(--mint)}h1{margin:14px 0 4px;font-size:clamp(2rem,7vw,3.4rem);line-height:1.1}h2{margin:28px 0 10px}p{color:var(--muted)}label{display:grid;gap:5px;color:var(--muted);font-size:.86rem}
+button,input,select{font:inherit;color:var(--ink);background:#14202a;border:1px solid var(--edge);border-radius:10px;padding:9px 11px;min-width:0}button,select{cursor:pointer}button:hover{border-color:var(--mint)}:focus-visible{outline:2px solid var(--mint);outline-offset:3px}.primary{background:var(--mint);color:#14251e;font-weight:750}
+.controls,.actions{display:flex;align-items:end;gap:10px;flex-wrap:wrap}.task{margin:12px 0;padding:16px;border:1px solid var(--edge);border-radius:14px;background:var(--panel)}.task h3{margin:0 0 12px;overflow-wrap:anywhere}.row{display:grid;grid-template-columns:1fr 1.5fr .8fr 1fr;gap:8px;padding:8px 0 12px;border-top:1px solid var(--edge)}.row-title{grid-column:1/-1;font-size:.85rem;color:var(--mint)}.translation{margin-top:6px}.result{margin:18px 0;padding:14px;background:var(--panel);border:1px solid var(--edge);border-radius:12px}.error{color:var(--red);border-color:var(--red)}.ok{border-color:var(--mint)}.answer{font-size:.82rem;color:var(--red);overflow-wrap:anywhere}.model{color:var(--mint)}.actions{margin-top:18px}
+@media(max-width:620px){.row{grid-template-columns:1fr 1fr}.dictionary{grid-column:1/-1}.controls label{flex:1}.task{padding:12px}}
+</style>
+<main>
+<a href="./">← Обычное заучивание</a>
+<h1>Коллоквиум 1</h1>
+<p>Заполни разбор каждого слова и переведи термин целиком. Основу можно писать без дефиса, а долготу гласных — не отмечать.</p>
+<div class="controls">
+  <label>Билет<select id="ticket"><option value="mix">Смешанный вариант</option></select></label>
+  <button id="generate" type="button">Новый вариант</button>
+</div>
+<div id="results" role="status" tabindex="-1" hidden></div>
+<form id="exam" autocomplete="off">
+  <div id="tasks"></div>
+  <div class="actions">
+    <button class="primary" id="submit-exam">Сдать вариант</button>
+    <button type="button" id="retry" hidden>Повторить задания с ошибками</button>
+  </div>
+</form>
+</main>
+<script src="words.js"></script>
+<script src="morphology.js"></script>
+<script>
+const bank = "#25\ncrista ethmoidea maxillae|решётчатый гребень верхней челюсти|crista ethmoideus maxilla\natrium meatus medii|преддверие среднего хода|atrium meatus medius\ncaput superficiale musculi pterygoidei|поверхностная головка крыловидной мышцы|caput superficialis musculus pterygoideus\nos accessorium|добавочная кость|os accessorius\narteria posterior secunda|вторая задняя артерия|arteria posterior secundus|arteria secunda posterior\nmeatus nasalis inferior|нижний носовой ход|meatus nasalis inferior\nramus nervi coccygei|ветвь копчикового нерва|ramus nervus coccygeus\nforamen apicis radicis dentis|отверстие верхушки корня зуба|foramen apex radix dens\n#19\nseptum intermusculare posterius|задняя межмышечная перегородка|septum intermuscularis posterior\ntunica muscularis ductus|мышечная оболочка протока|tunica muscularis ductus\npars constrictoris medii pharyngis|часть среднего констриктора глотки|pars constrictor medius pharynx|часть среднего сжимателя глотки\nramus intermedius|промежуточная ветвь|ramus intermedius\nmusculus superficialis capitis|поверхностная мышца головы|musculus superficialis caput\ntuberculum anterius atlantis|передний бугорок атласа|tuberculum anterior atlas\napex dentis axis|верхушка зуба аксиса|apex dens axis\nforamen caecum ossis frontalis|слепое отверстие лобной кости|foramen caecus os frontalis\n#29\nseptum corporis cavernosi|перегородка пещеристого тела|septum corpus cavernosus\nos quintum metatarsi|пятая плюсневая кость|os quintus metatarsus|пятая кость плюсны\nvena thyreoidea inferior dextra|правая нижняя щитовидная вена|vena thyreoideus inferior dexter|нижняя правая щитовидная вена\nrete testis|сеть яичка|rete testis\nregio lateralis thoracis|латеральная область грудной клетки|regio lateralis thorax\nramus pontis arteriae|ветвь моста артерии|ramus pons arteria\nfacies articularis thyreoidea|щитовидная суставная поверхность|facies articularis thyreoideus|facies thyreoidea articularis\nligamentum posterius capitis fibulae|задняя связка головки малоберцовой кости|ligamentum posterior caput fibula\n#11\nforamen ischiadicum minus|малое седалищное отверстие|foramen ischiadicus minor\ncommissura cochlearis pontis|улитковая спайка моста|commissura cochlearis pons\nlobus medius pulmonis dextri|средняя доля правого лёгкого|lobus medius pulmo dexter\ncaput laterale|латеральная головка|caput lateralis\npecten ossis pubis|гребень лобковой кости|pecten os pubes\ncavitas superior articulationis|верхняя полость сустава|cavitas superior articulatio\nfacies capitis fibulae|поверхность головки малоберцовой кости|facies caput fibula\nextensor carpi radialis longus|длинный лучевой разгибатель запястья|extensor carpus radialis longus|extensor radialis longus carpi\n#1\nraphe diaphragmatis pelvis|шов диафрагмы таза|raphe diaphragma pelvis\nseptum corporis cavernosi|перегородка пещеристого тела|septum corpus cavernosus\ncaput rectum musculi femoris|прямая головка мышцы бедра|caput rectus musculus femur\nmargo tibiae|край большеберцовой кости|margo tibia\nextremitas posterior splenis|задний конец селезёнки|extremitas posterior splen|extremitas posterior lienis\nbronchus lobaris superior|верхний долевой бронх|bronchus lobaris superior\nbursa trochanterica musculi|вертельная сумка мышцы|bursa trochantericus musculus\nimpressio cardiaca hepatis|сердечное вдавление печени|impressio cardiacus hepar\n#15\nmargo anterior ulnae|передний край локтевой кости|margo anterior ulna\nvena petrosa superficialis|поверхностная каменистая вена|vena petrosus superficialis\nfacies superior ossis tali|верхняя поверхность таранной кости|facies superior os talus\nspina mentalis|подбородочная ость|spina mentalis\nmusculus longissimus capitis|длиннейшая мышца головы|musculus longissimus caput\nligamentum teres hepatis|круглая связка печени|ligamentum teres hepar\nfascia profunda colli|глубокая фасция шеи|fascia profundus collum\nradix anterior nervi femoralis|передний корешок бедренного нерва (нерва бедра)|radix anterior nervus femoralis|radix anterior nervi femoris\n#18\nligamentum mediale dextrum|правая медиальная связка|ligamentum medialis dexter\ntuberositas ossis sacri|бугристость крестца|tuberositas os sacer|бугристость крестцовой кости\nparies externus ductus cochlearis|наружная стенка улиткового протока|paries externus ductus cochlearis\ntuber ischiadicum|седалищный бугор|tuber ischiadicus\nsulcus sinus transversi|борозда поперечного синуса|sulcus sinus transversus\nlamina anterior fasciae|передняя пластинка фасции|lamina anterior fascia\ncrus breve incudis|короткая ножка наковальни|crus brevis incus\nsystema musculare membri superioris|мышечная система верхней конечности|systema muscularis membrum superior\n#5\nbasis ossis sacri|основание крестца|basis os sacer|основание крестцовой кости\nvena foraminis caeci|вена слепого отверстия|vena foramen caecus\nparies superior cavitatis nasi|верхняя стенка полости носа|paries superior cavitas nasus|верхняя стенка носовой полости\nnervus zygomaticus|скуловой нерв|nervus zygomaticus\ncaput femoris|головка бедренной кости|caput femur\npars transversa ligamenti|поперечная часть связки|pars transversus ligamentum\nramus nervi coccygei|ветвь копчикового нерва|ramus nervus coccygeus\nsulcus tendinis musculi fibularis|борозда сухожилия малоберцовой мышцы|sulcus tendo musculus fibularis|sulcus tendinis musculi peronei\n#21\npars superficialis masseteris|поверхностная часть жевательной мышцы|pars superficialis masseter\ncaput cornus posterioris|головка заднего рога|caput cornu posterior\nhiatus canalis nervi petrosi|расщелина канала каменистого нерва|hiatus canalis nervus petrosus|щель канала каменистого нерва\nligamentum teres|круглая связка|ligamentum teres\narcus posterior atlantis|задняя дуга атласа|arcus posterior atlas\nbronchus lobaris superior|верхний долевой бронх|bronchus lobaris superior\nextremitas anterior splenis|передний конец селезёнки|extremitas anterior splen|extremitas anterior lienis\nramus inferior ossis pubis|нижняя ветвь лобковой кости|ramus inferior os pubes\n#7\ncornu cartilaginis thyreoideae|рог щитовидного хряща|cornu cartilago thyreoideus\nsinus ossis sphenoidei|пазуха клиновидной кости|sinus os sphenoideus\nfissura obliqua pulmonis sinistri|косая щель левого лёгкого|fissura obliquus pulmo sinister\nraphe palati|шов нёба|raphe palatum\nregio posterior antebrachii|задняя область предплечья|regio posterior antebrachium\nmeatus nasalis communis|общий носовой ход|meatus nasalis communis\nflexor longus pollicis|длинный сгибатель большого пальца кисти|flexor longus pollex|flexor pollicis longus\ncaput profundum musculi pterygoidei|глубокая головка крыловидной мышцы|caput profundus musculus pterygoideus\n#3\nmargo anterior pancreatis|передний край поджелудочной железы|margo anterior pancreas\nramus mentalis arteriae|подбородочная ветвь артерии|ramus mentalis arteria\nforamen caecum ossis frontalis|слепое отверстие лобной кости|foramen caecus os frontalis\naorta descendens|нисходящая аорта|aorta descendens\ncorpus phalangis manus|тело фаланги кисти|corpus phalanx manus\ncaput musculi brachii|головка мышцы плеча|caput musculus brachium\nfacies medialis cartilaginis|медиальная поверхность хряща|facies medialis cartilago\nextensor carpi radialis longus|длинный лучевой разгибатель запястья|extensor carpus radialis longus|extensor radialis longus carpi\n#9\nextensor longus hallucis|длинный разгибатель большого пальца стопы|extensor longus hallux\nspina tympanica minor|малая барабанная ость|spina tympanicus minor\ncrus osseum simplex|простая костная ножка|crus osseus simplex\nramus ductus|ветвь протока|ramus ductus\ncarotis communis sinistra|левая общая сонная артерия|carotis communis sinister\ncrista tuberculi humeri|гребень бугорка плечевой кости|crista tuberculum humerus\nconstrictor inferior pharyngis|нижний констриктор глотки|constrictor inferior pharynx|constrictor pharyngis inferior\nfacies temporalis ossis zygomatici|височная поверхность скуловой кости|facies temporalis os zygomaticus";
+const clean = value => value.toLowerCase().normalize("NFD").replace(/\p{M}/gu, "")
+  .replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+const byId = id => document.getElementById(id);
+const dictionary = new Map(vocabulary.flat().filter(([form]) => form.includes(", "))
+  .map(([form]) => [clean(form.split(", ")[0]), form]));
+for (const form of ["os, ossis n", "intermuscularis, e", "cardiacus, a, um",
+  "fibularis, e", "peroneus, a, um", "tympanicus, a, um"]) {
+  dictionary.set(clean(form.split(", ")[0]), form);
+}
+const variants = new Map(bank.split(/\n#/).map(block => {
+  const [number, ...lines] = block.replace(/^#/, "").split("\n");
+  return [number, lines.map((line, index) => {
+    const [la, ru, lemmas, ...alternatives] = line.split("|");
+    return {la, ru, lemmas:lemmas.split(" "), alternatives, latinSource:index < 3};
+  })];
+}));
+const partOptions = ["Существительное", "Прилагательное", "Причастие", "Порядковое числительное"];
+const romanNumbers = {I:"1",II:"2",III:"3",IV:"4",V:"5"};
+const ticket = byId("ticket");
+const exam = byId("exam");
+const results = byId("results");
+const tasks = byId("tasks");
+const submit = byId("submit-exam");
+const retry = byId("retry");
+let checks = [], mistakes = [], current = [];
+
+function element(tag, text, parent, className) {
+  const node = document.createElement(tag);
+  if (text) node.textContent = text;
+  if (className) node.className = className;
+  parent.append(node);
+  return node;
+}
+
+function latinKeyboard(input) {
+  input.lang = "la";
+  input.inputMode = "email";
+  input.autocomplete = "off";
+  input.spellcheck = false;
+  input.setAttribute("autocorrect", "off");
+  input.setAttribute("autocapitalize", "none");
+}
+
+function mix(items) {
+  const shuffled = [...items];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
+function randomExam() {
+  const corpus = [...variants.values()].flat();
+  const selected = [];
+  const extended = Math.random() < 0.06;
+  if (extended) corpus.push({
+    la:"sulcus tendinis musculi fibularis longi",
+    ru:"борозда сухожилия длинной малоберцовой мышцы",
+    lemmas:["sulcus","tendo","musculus","fibularis","longus"],
+    alternatives:["sulcus tendinis musculi peronei longi"], latinSource:false
+  });
+  for (const [direction, lengths] of [[true,[3,3,4]], [false,[2,2,3,3,extended ? 5 : 4]]]) {
+    const candidates = mix(corpus.filter(task => task.latinSource === direction));
+    for (const length of lengths) {
+      const unused = candidates.filter(task => !selected.some(other => other.la === task.la));
+      selected.push(unused.find(task => task.lemmas.length === length) || unused[0]);
+    }
+  }
+  return selected;
+}
+
+function partOfSpeech(info) {
+  if (info.part.startsWith("Причастие")) return "Причастие";
+  if (info.part.startsWith("Прилагательное")) return "Прилагательное";
+  return info.part;
+}
+
+function declineNumber(value) {
+  return value.toUpperCase().replace(/[IV]+/g, token => romanNumbers[token] || token)
+    .replace(/[\s,;./–—-]+/g, "");
+}
+
+function field(parent, label, answers, task, options = {}) {
+  const wrapper = element("label", label, parent, options.className);
+  const input = element(options.select ? "select" : "input", "", wrapper);
+  input.required = true;
+  if (options.latin) latinKeyboard(input);
+  if (options.select) {
+    input.add(new Option("Выбери", ""));
+    for (const part of partOptions) input.add(new Option(part, part));
+  }
+  const normalize = options.normalize || clean;
+  checks.push({task,wrapper,input,answers,normalize,translation:options.translation});
+}
+
+function rowForms(lemma, task) {
+  const alternatives = {
+    splen:"lien", femoralis:"femur", fibularis:"peroneus"
+  };
+  const primary = dictionary.get(lemma);
+  const other = !task.latinSource && task.alternatives.length && dictionary.get(alternatives[lemma]);
+  return (other ? [primary, other] : [primary]).map(form => {
+    const info = describeLatin(form);
+    const declension = info.declension === "I–II" ? "2, 1, 2"
+      : romanNumbers[info.declension.split(" ")[0]];
+    const split = form.match(/^(.*), \S+ ([mfn])$/);
+    return {
+      part: partOfSpeech(info), form, declension, stem: info.stem,
+      full: split ? split[1] + ", " + info.genitive + " " + split[2] : form
+    };
+  });
+}
+
+function render(selected) {
+  current = selected;
+  checks = [];
+  mistakes = [];
+  tasks.replaceChildren();
+  results.hidden = retry.hidden = true;
+  submit.hidden = false;
+  let lastDirection;
+  selected.forEach((task, index) => {
+    if (lastDirection !== task.latinSource) {
+      element("h2", task.latinSource ? "I. С латыни на русский" : "II. С русского на латынь", tasks);
+      lastDirection = task.latinSource;
+    }
+    const card = element("section", "", tasks, "task");
+    const source = element("h3", (index + 1) + ". " + (task.latinSource ? task.la : task.ru), card);
+    if (task.latinSource) source.lang = "la";
+    const tokens = task.la.split(" ");
+    task.lemmas.forEach((lemma, wordIndex) => {
+      const row = element("div", "", card, "row");
+      element("span", task.latinSource ? tokens[wordIndex] : "Слово " + (wordIndex + 1) + " в латинском термине", row, "row-title");
+      const forms = rowForms(lemma, task);
+      field(row, "Часть речи", forms.map(x => x.part), task, {select:true});
+      field(row, "Словарная форма", forms.flatMap(x => [x.form,x.full]), task, {latin:true,className:"dictionary"});
+      field(row, "Склонение", forms.flatMap(x => x.declension === "2, 1, 2" ? [x.declension,"1–2"] : [x.declension]), task, {normalize:declineNumber});
+      field(row, "Практическая основа", forms.map(x => x.stem), task, {latin:true});
+    });
+    field(card, "Перевод термина", [
+      task.latinSource ? task.ru : task.la, ...task.alternatives
+    ], task, {latin:!task.latinSource,translation:true,className:"translation"});
+  });
+}
+
+function startExam() {
+  render(ticket.value === "mix" ? randomExam() : variants.get(ticket.value));
+}
+
+function grade(event) {
+  event.preventDefault();
+  const wrong = new Set();
+  let correct = 0;
+  for (const {task,wrapper,input,answers,normalize,translation} of checks) {
+    const value = normalize(input.value);
+    const ok = answers.some(answer => value === normalize(answer));
+    input.disabled = true;
+    input.classList.add(ok ? "ok" : "error");
+    if (ok) {
+      correct++;
+      continue;
+    }
+    wrong.add(task);
+    let correction = answers[0];
+    if (wrapper.firstChild.textContent === "Практическая основа") correction += "-";
+    const message = element("span", "Правильно: " + correction, wrapper, "answer");
+    if (translation && !task.latinSource) {
+      const expected = clean(task.la).split(" ");
+      const actual = value.split(" ");
+      if (actual.length === expected.length) {
+        const changes = expected.flatMap((word, index) => word === actual[index] ? [] : [actual[index] + " → " + word]);
+        if (changes.length) element("span", changes.join(" · ") + ". Проверь падеж и согласование.", message);
+      }
+    }
+  }
+  for (const task of current) {
+    const translation = checks.find(item => item.task === task && item.translation);
+    element("p", "Образец: " + translation.answers[0], translation.wrapper.parentElement, "model");
+  }
+  mistakes = current.filter(task => wrong.has(task));
+  results.className = "result";
+  results.textContent = "Верных полей: " + correct + " из " + checks.length
+    + ". Полностью верных заданий: " + (current.length - wrong.size) + " из " + current.length + ".";
+  results.hidden = false;
+  results.focus();
+  submit.hidden = true;
+  retry.hidden = !mistakes.length;
+}
+
+for (const number of [...variants.keys()].sort((a,b) => Number(a)-Number(b))) {
+  ticket.add(new Option("Вариант " + number, number));
+}
+ticket.addEventListener("change", startExam);
+byId("generate").addEventListener("click", startExam);
+exam.addEventListener("submit", grade);
+retry.addEventListener("click", () => {
+  render(mistakes);
+  tasks.querySelector("select").focus();
+});
+startExam();
+</script>
+</html>
